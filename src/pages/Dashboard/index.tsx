@@ -36,12 +36,24 @@ const Dashboard: React.FC = () => {
 
   useEffect(() => { 
     async function loadTransactions(): Promise<void> {
-      api.get('/transactions').then(response => {
-        setTransactions(response.data.transactions);
-      });
-      api.get('/transactions').then(response => {
-        setBalance(response.data.balance);
-      });
+    const response = await api.get('/transactions');
+    
+    const transactionsFormatted = response.data.transactions.map((transaction: Transaction) => ({
+      ...transaction, 
+      formattedValue: formatValue(transaction.value),
+      formattedDate: new Date(transaction.created_at).toLocaleDateString('pt-br'),
+    }));
+
+    const balanceFormatted = {
+      income: formatValue(response.data.balance.income),
+      outcome: formatValue(response.data.balance.outcome),
+      total: formatValue(response.data.balance.total),
+    }
+
+    //esquema por front não ter que formatar toda vez
+
+    setTransactions(transactionsFormatted);
+    setBalance(balanceFormatted);
     }
 
     loadTransactions();
@@ -57,21 +69,21 @@ const Dashboard: React.FC = () => {
               <p>Entradas</p>
               <img src={income} alt="Income" />
             </header>
-            <h1 data-testid="balance-income">R$ {new Intl.NumberFormat().format(parseFloat(balance.income))}</h1>
+            <h1 data-testid="balance-income">{balance.income}</h1>
           </Card>
           <Card>
             <header>
               <p>Saídas</p>
               <img src={outcome} alt="Outcome" />
             </header>
-            <h1 data-testid="balance-outcome">R$ {new Intl.NumberFormat().format(parseFloat(balance.outcome))}</h1>
+            <h1 data-testid="balance-outcome">{balance.outcome}</h1>
           </Card>
           <Card total>
             <header>
               <p>Total</p>
               <img src={total} alt="Total" />
             </header>
-            <h1 data-testid="balance-total">R$ {new Intl.NumberFormat().format(parseFloat(balance.total))}</h1>
+            <h1 data-testid="balance-total">{balance.total}</h1>
           </Card>
         </CardContainer>
 
@@ -85,16 +97,20 @@ const Dashboard: React.FC = () => {
                 <th>Data</th>
               </tr>
             </thead>
-            {transactions.map(transaction => (
+
             <tbody>
-              <tr>
-                <td className="title">{transaction.title}</td>
-                <td className={transaction.type === "income" ? "income" : "outcome"}>R$ - {new Intl.NumberFormat().format(parseFloat(balance.total))}</td>
-                <td>{transaction.category.title}</td>
-                <td>{transaction.formattedDate}</td>
-              </tr> 
+              {transactions.map(transaction => (
+                <tr key={transaction.id}>
+                  <td className="title">{transaction.title}</td>
+                  <td className={transaction.type}>
+                    {transaction.type === 'outcome' && ' - '}
+                    {transaction.formattedValue}
+                  </td>
+                  <td>{transaction.category.title}</td>
+                  <td>{transaction.formattedDate}</td>
+                </tr> 
+              ))}
             </tbody>
-             ))}
           </table>         
         </TableContainer>
       </Container>
